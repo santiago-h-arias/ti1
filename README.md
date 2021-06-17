@@ -29,6 +29,6 @@ The API will run on port 8000
     
 ### Running tests 📋
 
-Within the root directory:
+Run:
 
-    /root$ go run api.go
+    /root$ go test
