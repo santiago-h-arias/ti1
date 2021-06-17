@@ -2,13 +2,14 @@ package controllers
 
 import (
 	dto "tinc1/Dto"
+	models "tinc1/Models"
 	services "tinc1/Services"
 
 	"github.com/gin-gonic/gin"
 )
 
 type LoginController interface {
-	Login(ctx *gin.Context) string
+	Login(ctx *gin.Context) (string, models.NaesbUser)
 }
 
 type loginController struct {
@@ -24,15 +25,15 @@ func NewLoginController(loginService services.LoginService,
 	}
 }
 
-func (controller *loginController) Login(ctx *gin.Context) string {
+func (controller *loginController) Login(ctx *gin.Context) (string, models.NaesbUser) {
 	var credentials dto.LoginCredentials
 	err := ctx.ShouldBind(&credentials)
 	if err != nil {
-		return ""
+		return "", models.NaesbUser{}
 	}
-	isAuthenticated := controller.loginService.Login(credentials.Email, credentials.Password)
+	isAuthenticated, user := controller.loginService.Login(credentials.Email, credentials.Password)
 	if isAuthenticated {
-		return controller.jWtService.GenerateToken(credentials.Email)
+		return controller.jWtService.GenerateToken(credentials.Email), user
 	}
-	return ""
+	return "", models.NaesbUser{}
 }

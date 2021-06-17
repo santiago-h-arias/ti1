@@ -1,6 +1,8 @@
 package models
 
 type NaesbUser struct {
-	Name  string
-	Email string
+	Naesbuserkey string
+	Name         string
+	Email        string
+	Isadmin      bool
 }

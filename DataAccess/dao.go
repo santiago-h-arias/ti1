@@ -11,10 +11,11 @@ import (
 
 	"gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type Dao interface {
-	CheckUser(userId string, password string) bool
+	CheckUser(userId string, password string) (bool, models.NaesbUser)
 }
 
 type dao struct {
@@ -37,7 +38,7 @@ func NewDao() Dao {
 		configuration.DBName,
 	)
 
-	db, dberr := gorm.Open(sqlserver.Open(dsn), &gorm.Config{})
+	db, dberr := gorm.Open(sqlserver.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Info)})
 	if dberr != nil {
 		log.Fatalln(dberr)
 		return nil
@@ -64,8 +65,8 @@ func GetConfiguration() (config.DBConfig, error) {
 	return config, nil
 }
 
-func (dao *dao) CheckUser(email string, password string) bool {
+func (dao *dao) CheckUser(email string, password string) (bool, models.NaesbUser) {
 	var user models.NaesbUser
-	result := dao.db.Table("NaesbUser").Where("Email = ? AND Password = ?", email, password).First(&user)
-	return result.RowsAffected > 0
+	result := dao.db.Table("NaesbUser").Where("Email = ? AND Password = ?", email, password).Find(&user)
+	return result.RowsAffected > 0, user
 }

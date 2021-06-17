@@ -5,6 +5,7 @@ import (
 	"os"
 
 	controllers "tinc1/Controllers"
+	dataaccess "tinc1/DataAccess"
 	services "tinc1/Services"
 
 	"github.com/gin-gonic/gin"
@@ -12,10 +13,11 @@ import (
 
 var (
 	// filesService  services.FileService = service.NewFileService()
-	loginService services.LoginService = services.DBLoginService()
-	jwtService   services.JWTService   = services.NewJWTService()
+	dao        dataaccess.Dao      = dataaccess.NewDao()
+	jwtService services.JWTService = services.NewJWTService()
 
 	// filesController controllers.filesController = controllers.NewFilesController()
+	loginService    services.LoginService       = services.DBLoginService(dao)
 	loginController controllers.LoginController = controllers.NewLoginController(loginService, jwtService)
 )
 
@@ -27,11 +29,12 @@ func main() {
 
 	// Login Endpoint: Authentication + Token creation
 	api.POST("/login", func(ctx *gin.Context) {
-		// fmt.Println(dao.CheckUser("ajith@thinkbridge.in", "Ajith12#"))
-		token := loginController.Login(ctx)
+		// fmt.Println(dao.CheckUser("ajith@thinkbridge.in", "Ajith123#"))
+		token, user := loginController.Login(ctx)
 		if token != "" {
 			ctx.JSON(http.StatusOK, gin.H{
 				"token": token,
+				"user":  user,
 			})
 		} else {
 			ctx.JSON(http.StatusUnauthorized, nil)
