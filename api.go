@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 
@@ -16,9 +17,12 @@ var (
 	dao        dataaccess.Dao      = dataaccess.NewDao()
 	jwtService services.JWTService = services.NewJWTService()
 
-	// filesController controllers.filesController = controllers.NewFilesController()
-	loginService    services.LoginService       = services.DBLoginService(dao)
-	loginController controllers.LoginController = controllers.NewLoginController(loginService, jwtService)
+	filesdao dataaccess.Files = dataaccess.NewFiles()
+
+	fileservice     services.FileService              = services.DBFilesService(filesdao)
+	filesController controllers.FileServiceController = controllers.NewFilesController(fileservice)
+	loginService    services.LoginService             = services.DBLoginService(dao)
+	loginController controllers.LoginController       = controllers.NewLoginController(loginService, jwtService)
 )
 
 func main() {
@@ -41,6 +45,22 @@ func main() {
 		}
 	})
 
+	api.GET("/files", func(c *gin.Context) {
+		data := filesController.Files(c)
+		fmt.Printf("data: %s", data)
+		// err := c.ShouldBindJSON(&data)
+		// if err != nil {
+		// 	panic(err)
+		// }
+		// if data !=  {
+		// 	c.JSON(http.StatusOK, gin.H{
+		// 		"data": data,
+		// 	})
+		// }
+		c.JSON(http.StatusOK, gin.H{
+			"data": data,
+		})
+	})
 	// To set the port as an env variable from the eb console
 	port := os.Getenv("PORT")
 	// Elastic Beanstalk forwards requests to port 8000
