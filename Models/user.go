@@ -1,10 +1,8 @@
 package models
 
-import "github.com/google/uuid"
-
 type NaesbUser struct {
-	NaesbUserKey uuid.UUID `gorm:"type:string;primary_key" json:"user_key"`
-	Name         string    `gorm:"type:string" json:"user_name"`
-	Email        string    `gorm:"type:string" json:"user_email"`
-	IsAdmin      bool      `gorm:"type:bool" json:"user_admin"`
+	User_key   string `db:"NaesbUserKey" json:"user_key"`
+	User_name  string `db:"Name" json:"user_name"`
+	User_email string `db:"Email" json:"user_email"`
+	User_admin bool   `db:"IsAdmin" json:"user_admin"`
 }

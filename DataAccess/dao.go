@@ -9,8 +9,8 @@ import (
 	config "tinc1/Config"
 	models "tinc1/Models"
 
-	"gorm.io/driver/sqlserver"
-	"gorm.io/gorm"
+	_ "github.com/denisenkom/go-mssqldb"
+	"github.com/jmoiron/sqlx"
 )
 
 type Dao interface {
@@ -18,7 +18,7 @@ type Dao interface {
 }
 
 type dao struct {
-	db *gorm.DB
+	db *sqlx.DB
 }
 
 func NewDao() Dao {
@@ -29,15 +29,14 @@ func NewDao() Dao {
 	}
 
 	dsn := fmt.Sprintf(
-		"sqlserver://%s:%s@%s:%s?database=%s",
+		"sqlserver://%s:%s@%s:%s/?database=%s",
 		configuration.User,
 		configuration.Password,
 		configuration.DBAddress,
 		configuration.Port,
 		configuration.DBName,
 	)
-
-	db, dberr := gorm.Open(sqlserver.Open(dsn), &gorm.Config{})
+	db, dberr := sqlx.Connect("sqlserver", dsn)
 	if dberr != nil {
 		log.Fatalln(dberr)
 		return nil
@@ -66,6 +65,11 @@ func GetConfiguration() (config.DBConfig, error) {
 
 func (dao *dao) CheckUser(email string, password string) (bool, models.NaesbUser) {
 	var user models.NaesbUser
-	result := dao.db.Table("NaesbUser").Where("Email = ? AND Password = ?", email, password).Find(&user)
-	return result.RowsAffected > 0, user
+
+	err := dao.db.QueryRowx("select cast(NaesbUserKey as char(36)) as NaesbUserKey, Name, Email from NaesbUser where Email=@p1 and Password=@p2", email, password).StructScan(&user)
+	if err == nil {
+		return true, user
+	}
+	return false, user
+
 }
