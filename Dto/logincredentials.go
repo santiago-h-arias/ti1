@@ -6,5 +6,5 @@ type LoginCredentials struct {
 }
 
 type Files struct {
-	Id string `form: "id", binding:"required"`
+	Id string `json: "id", binding:"required"`
 }

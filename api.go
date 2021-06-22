@@ -45,7 +45,7 @@ func main() {
 		}
 	})
 
-	api.GET("/files", func(c *gin.Context) {
+	api.POST("/files", func(c *gin.Context) {
 		data := filesController.Files(c)
 		fmt.Printf("data: %s", data)
 		// err := c.ShouldBindJSON(&data)
