@@ -1,13 +1,11 @@
 package dataaccess
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 
-	config "tinc1/Config"
 	models "tinc1/Models"
+	dbutils "tinc1/Utils"
 
 	_ "github.com/denisenkom/go-mssqldb"
 	"github.com/jmoiron/sqlx"
@@ -15,6 +13,7 @@ import (
 
 type Dao interface {
 	CheckUser(userId string, password string) (bool, models.NaesbUser)
+	GetInboundFiles(id string) []models.Inboundfile
 }
 
 type dao struct {
@@ -22,7 +21,7 @@ type dao struct {
 }
 
 func NewDao() Dao {
-	configuration, conferr := GetConfiguration()
+	configuration, conferr := dbutils.GetConfiguration()
 	if conferr != nil {
 		log.Fatalln(conferr)
 		return nil
@@ -47,22 +46,6 @@ func NewDao() Dao {
 	}
 }
 
-func GetConfiguration() (config.DBConfig, error) {
-	config := config.DBConfig{}
-	file, err := os.Open("./configuration.json")
-	if err != nil {
-		return config, err
-	}
-	defer file.Close()
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&config)
-	if err != nil {
-		return config, err
-	}
-
-	return config, nil
-}
-
 func (dao *dao) CheckUser(email string, password string) (bool, models.NaesbUser) {
 	var user models.NaesbUser
 
@@ -71,5 +54,12 @@ func (dao *dao) CheckUser(email string, password string) (bool, models.NaesbUser
 		return true, user
 	}
 	return false, user
+
+}
+
+func (dao *dao) GetInboundFiles(id string) []models.Inboundfile {
+	var findfiles []models.Inboundfile
+	dao.db.Select(&findfiles, "select *, cast(nuu.NaesbUserKey as char(36)) as NaesbUserKey, cast(InboundFileKey as char(36)) as InboundFileKey, cast(if2.UsKey as char(36)) as UsKey, cast(ThemKey as char(36)) as ThemKey from InboundFiles if2 left join NaesbUserUs nuu on nuu.UsKey = if2.Uskey  where nuu.Inactive = 0 and nuu.NaesbUserKey=@p1", id)
+	return findfiles
 
 }

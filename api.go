@@ -19,6 +19,8 @@ var (
 	dao        dataaccess.Dao      = dataaccess.NewDao()
 	jwtService services.JWTService = services.NewJWTService()
 
+	filesService    services.FilesService       = services.DBFilesService(dao)
+	filesController controllers.FilesController = controllers.NewFilesController(filesService)
 	loginService    services.LoginService       = services.DBLoginService(dao)
 	loginController controllers.LoginController = controllers.NewLoginController(loginService, jwtService)
 )
@@ -46,9 +48,9 @@ func main() {
 	apiRoutes := api.Group("/api", middlewares.AuthorizeJWT())
 	{
 		apiRoutes.POST("/files", func(c *gin.Context) {
-
+			data := filesController.GetInboundFiles(c)
 			c.JSON(http.StatusOK, gin.H{
-				"data": "Ok!",
+				"data": data,
 			})
 		})
 	}
