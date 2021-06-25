@@ -9,6 +9,7 @@ import (
 
 	controllers "tinc1/Controllers"
 	dataaccess "tinc1/DataAccess"
+	middlewares "tinc1/Middlewares"
 	services "tinc1/Services"
 
 	"github.com/gin-gonic/gin"
@@ -46,6 +47,17 @@ func main() {
 			ctx.JSON(http.StatusUnauthorized, nil)
 		}
 	})
+
+	// Protectected routes are grouped here
+	apiRoutes := api.Group("/api", middlewares.AuthorizeJWT())
+	{
+		apiRoutes.POST("/files", func(c *gin.Context) {
+
+			c.JSON(http.StatusOK, gin.H{
+				"data": "Ok!",
+			})
+		})
+	}
 
 	port := os.Getenv("PORT")
 	if port == "" {
