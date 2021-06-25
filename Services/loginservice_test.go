@@ -17,10 +17,14 @@ type mock_dao struct {
 }
 
 func (dao *mock_dao) CheckUser(email string, password string) (bool, models.NaesbUser) {
-	if email == "ajith@thinkbridge.in" && password == "Ajith12#" {
-		return true, models.NaesbUser{}
+	var user models.NaesbUser
+
+	err := dao.db.QueryRowx("select cast(NaesbUserKey as char(36)) as NaesbUserKey, Name, Email from NaesbUser where Email=@p1 and Password=@p2", email, password).StructScan(&user)
+	if err == nil {
+		return true, user
 	}
-	return false, models.NaesbUser{}
+	return false, user
+
 }
 
 func NewMock_Dao(db sqlx.DB) dataaccess.Dao {
@@ -62,6 +66,10 @@ func Test_Login(t *testing.T) {
 		if !auth {
 			t.Fatalf(`Failed to Authenticate`)
 		}
+
+		if eror := mock.ExpectationsWereMet(); eror != nil {
+			t.Fatalf(eror.Error())
+		}
 	})
 
 	t.Run("invalidCredentials", func(t *testing.T) {
@@ -74,6 +82,10 @@ func Test_Login(t *testing.T) {
 
 		if auth {
 			t.Fatalf(`Shouldn't have authenticated!`)
+		}
+
+		if eror := mock.ExpectationsWereMet(); eror != nil {
+			t.Fatalf(eror.Error())
 		}
 	})
 }
