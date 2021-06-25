@@ -47,7 +47,7 @@ func main() {
 	// Protectected routes are grouped here
 	apiRoutes := api.Group("/api", middlewares.AuthorizeJWT())
 	{
-		apiRoutes.POST("/files", func(c *gin.Context) {
+		apiRoutes.POST("/inboundfiles", func(c *gin.Context) {
 			data := filesController.GetInboundFiles(c)
 			c.JSON(http.StatusOK, gin.H{
 				"data": data,

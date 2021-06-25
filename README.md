@@ -43,7 +43,7 @@ Run:
 
 - Inboundfiles endpoint:
 
-    localhost:8000/api/files
+    localhost:8000/api/inboundfiles
 
     Requires authentication header (BEARER TOKEN). Receives a JSON in the request body:
     {
