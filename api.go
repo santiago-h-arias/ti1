@@ -16,15 +16,9 @@ import (
 )
 
 var (
-	// TODO: implement files service
-	// TODO: implement files dao
-	// filesService  services.FileService = service.NewFileService()
-	// filesDao        dataaccess.Dao      = dataaccess.NewDao()
 	dao        dataaccess.Dao      = dataaccess.NewDao()
 	jwtService services.JWTService = services.NewJWTService()
 
-	// TODO: implement files controller
-	// filesController controllers.filesController = controllers.NewFilesController()
 	loginService    services.LoginService       = services.DBLoginService(dao)
 	loginController controllers.LoginController = controllers.NewLoginController(loginService, jwtService)
 )
@@ -33,7 +27,7 @@ func main() {
 
 	api := gin.New()
 
-	api.Use(gin.Recovery(), gin.Logger())
+	api.Use(gin.Recovery(), gin.Logger(), CORS)
 
 	// Login Endpoint: Authentication + Token creation + User response
 	api.POST("/login", func(ctx *gin.Context) {
@@ -64,4 +58,17 @@ func main() {
 		port = "8000"
 	}
 	api.Run(":" + port)
+}
+
+func CORS(c *gin.Context) {
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.Header("Access-Control-Allow-Methods", "*")
+	c.Header("Access-Control-Allow-Headers", "*")
+	c.Header("Content-Type", "application/json")
+
+	if c.Request.Method != "OPTIONS" {
+		c.Next()
+	} else {
+		c.AbortWithStatus(http.StatusOK)
+	}
 }
