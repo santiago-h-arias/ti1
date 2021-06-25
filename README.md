@@ -32,3 +32,20 @@ The API will run on port 8000
 Run:
 
     /root$ go test
+
+### Endpoints 📋
+
+- Login endpoint:
+
+    localhost:8000/login
+
+    Receives "email" and "password" as form data. Returns a JWT and a user object if auth is ok. 401 otherwise.
+
+- Inboundfiles endpoint:
+
+    localhost:8000/api/files
+
+    Requires authentication header (BEARER TOKEN). Receives a JSON in the request body:
+    {
+        "id": "YOURKEY"
+    }
