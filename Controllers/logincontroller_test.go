@@ -30,7 +30,7 @@ func (jwtService *mock_jwtService) GenerateToken(email string) string {
 	if email == "ajith@thinkbridge.in" {
 		return "1234_valid_token_4321"
 	}
-	fmt.Printf("\n\nExpected:%s\nGot:%s\n\n\n", "ajith@thinkbridge.in", email)
+	//fmt.Printf("\n\nExpected:%s\nGot:%s\n\n\n", "ajith@thinkbridge.in", email)
 
 	return ""
 }
@@ -183,4 +183,55 @@ func Test_Login(t *testing.T) {
 		}
 	})
 
+	t.Run(("noCredentials"), func(t *testing.T) {
+		creds := dto.LoginCredentials{
+			Email:    "",
+			Password: "",
+		}
+
+		buf := new(bytes.Buffer)
+		mw := multipart.NewWriter(buf)
+		assert.NoError(t, mw.WriteField("email", creds.Email))
+		assert.NoError(t, mw.WriteField("password", creds.Password))
+		w, err := mw.CreateFormFile("file", "test")
+		if assert.NoError(t, err) {
+			_, err = w.Write([]byte("test"))
+			assert.NoError(t, err)
+		}
+		mw.Close()
+
+		mock_ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+		mock_ctx.Request = httptest.NewRequest("POST", "http://localhost:8000/login", buf)
+		mock_ctx.Request.Header.Set("Content-Type", mw.FormDataContentType())
+
+		//Emulated output
+		rows := sqlmock.NewRows([]string{"NaesbUserKey", "Name", "Email"})
+		//Query to expect and then emulate output
+		mock.ExpectQuery(regexp.QuoteMeta("select cast(NaesbUserKey as char(36)) as NaesbUserKey, Name, Email from NaesbUser where Email=@p1 and Password=@p2")).WillReturnRows(rows)
+
+		token, _ := fitted_loginController.Login(mock_ctx)
+
+		if eror := mock.ExpectationsWereMet(); eror != nil {
+			t.Fatalf(eror.Error())
+		}
+
+		if token != "" {
+			t.Fatalf("\nShouldn't have authenticated!\nExpected : \"%s\"\tGot : \"%s\"", "", token)
+		}
+	})
+
+	t.Run(("emptyRequest"), func(t *testing.T) {
+		mock_ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+		mock_ctx.Request = httptest.NewRequest("POST", "http://localhost:8000/login", nil)
+
+		token, _ := fitted_loginController.Login(mock_ctx)
+
+		if eror := mock.ExpectationsWereMet(); eror != nil {
+			t.Fatalf(eror.Error())
+		}
+
+		if token != "" {
+			t.Fatalf("\nShouldn't have authenticated!\nExpected : \"%s\"\tGot : \"%s\"", "", token)
+		}
+	})
 }
