@@ -67,7 +67,7 @@ func (dao *dao) GetInboundFiles(id string) []models.Inboundfile {
 
 func (dao *dao) GetOutboundFiles(id string) []models.Outboundfile {
 	var findfiles []models.Outboundfile
-	dao.db.Select(&findfiles, "select *, cast(nuu.NaesbUserKey as char(36)) as NaesbUserKey, cast(OutboundFileKey as char(36)) as OutboundFileKey, cast(if2.UsKey as char(36)) as UsKey, cast(ThemKey as char(36)) as ThemKey from OutboundFiles if2 left join NaesbUserUs nuu on nuu.UsKey = if2.Uskey  where nuu.Inactive = 0 and nuu.NaesbUserKey=@p1", id)
+	dao.db.Select(&findfiles, "select *, cast(nuu.NaesbUserKey as char(36)) as NaesbUserKey, cast(OutboundFileKey as char(36)) as OutboundFileKey, cast(if2.UsKey as char(36)) as UsKey, cast(ThemKey as char(36)) as ThemKey from OutboundFiles if2 left join NaesbUserUs nuu on nuu.UsKey = if2.Uskey where nuu.Inactive = 0 and nuu.NaesbUserKey=@p1", id)
 	fmt.Println(findfiles)
 	return findfiles
 

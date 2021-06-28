@@ -1,29 +1,31 @@
 package models
 
+import "database/sql"
+
 type Outboundfile struct {
-	OutboundFileKey           string `db:"OutboundFileKey" json:"File_key"`
-	UsKey                     string `db:"UsKey" json:"user_key"`
-	UsCommonCode              string `db:"UsCommonCode" json:"UsCommonCode"`
-	ThemKey                   string `db:"ThemKey" json:"them_key"`
-	ThemCommonCode            string `db:"ThemCommonCode" json:"ThemCommonCode"`
-	Filename                  string `db:"Filename" json:"Filename"`
-	Plaintext                 string `db:"Plaintext" json:"Plaintext"`
-	Ciphertext                string `db:"Ciphertext" json:"Ciphertext"`
-	Attempt1At                string `db:"Attempt1At" json:"file_attempt1at"`
-	Attempt2At                string `db:"Attempt2At" json:"file_attempt2at"`
-	Attempt3At                string `db:"Attempt3At" json:"file_attempt3at"`
-	Receipt                   string `db:"Receipt" json:"file_receipt"`
-	Result                    string `db:"Result" json:"file_result"`
-	Escalated                 string `db:"Escalated" json:"file_escalated"`
-	EscalatedAt               string `db:"EscalatedAt" json:"file_escalated_at"`
-	Debug                     string `db:"Debug" json:"file_debug"`
-	CreatedAt                 string `db:"CreatedAt" json:"file_created_at"`
-	EmpowerOutgoingEdiFileKey string `db:"EmpowerOutgoingEdiFileKey" json:"file_empower_key"`
-	DoNotSend                 string `db:"DoNotSend" json:"file_do_not_send"`
-	LastLocation              string `db:"LastLocation" json:"file_last_location"`
-	Ciphered                  string `db:"Ciphered" json:"file_ciphered"`
-	Posted                    string `db:"Posted" json:"file_posted"`
-	OutboundFileId            string `db:"OutboundFileId" json:"outbound_id"`
-	NaesbUserKey              string `db:"NaesbUserKey" json:"NaesbUserKey"`
-	Inactive                  string `db:"Inactive" json:"Inactive"`
+	OutboundFileKey           string         `db:"OutboundFileKey" json:"outbound_file_key,omitempty"`
+	NaesbUserKey              string         `db:"NaesbUserKey" json:"naesb_user_key,omitempty"`
+	UsKey                     string         `db:"UsKey" json:"us_key,omitempty"`
+	UsCommonCode              string         `db:"UsCommonCode" json:"us_common_code,omitempty"`
+	ThemKey                   string         `db:"ThemKey" json:"them_key,omitempty"`
+	ThemCommonCode            string         `db:"ThemCommonCode" json:"them_common_code,omitempty"`
+	Filename                  string         `db:"Filename" json:"filename,omitempty"`
+	Plaintext                 string         `db:"Plaintext" json:"plaintext,omitempty"`
+	Ciphertext                sql.NullString `db:"Ciphertext" json:"ciphertext,omitempty"`
+	Attempt1At                sql.NullString `db:"Attempt1At" json:"attempt_1_at,omitempty"`
+	Attempt2At                sql.NullString `db:"Attempt2At" json:"attempt_2_at,omitempty"`
+	Attempt3At                sql.NullString `db:"Attempt3At" json:"attempt_3_at,omitempty"`
+	Receipt                   sql.NullString `db:"Receipt" json:"receipt,omitempty"`
+	Result                    sql.NullString `db:"Result" json:"result,omitempty"`
+	Escalated                 string         `db:"Escalated" json:"escalated,omitempty"`
+	EscalatedAt               sql.NullString `db:"EscalatedAt" json:"escalated_at,omitempty"`
+	Debug                     string         `db:"Debug" json:"debug,omitempty"`
+	CreatedAt                 string         `db:"CreatedAt" json:"created_at,omitempty"`
+	EmpowerOutgoingEdiFileKey sql.NullString `db:"EmpowerOutgoingEdiFileKey" json:"empower_outgoing_edi_file_key,omitempty"`
+	DoNotSend                 string         `db:"DoNotSend" json:"do_not_send,omitempty"`
+	LastLocation              sql.NullString `db:"LastLocation" json:"last_location,omitempty"`
+	Ciphered                  string         `db:"Ciphered" json:"ciphered,omitempty"`
+	Posted                    string         `db:"Posted" json:"posted,omitempty"`
+	OutboundFileId            string         `db:"OutboundFileId" json:"outbound_file_id,omitempty"`
+	Inactive                  string         `db:"Inactive" json:"inactive,omitempty"`
 }
