@@ -6,7 +6,6 @@ import (
 
 	services "tinc1/Services"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,13 +18,7 @@ func AuthorizeJWT() gin.HandlerFunc {
 
 		token, err := services.NewJWTService().ValidateToken(tokenString)
 
-		if token.Valid {
-			claims := token.Claims.(jwt.MapClaims)
-			log.Println("Claims[Name]: ", claims["name"])
-			log.Println("Claims[Issuer]: ", claims["iss"])
-			log.Println("Claims[IssuedAt]: ", claims["iat"])
-			log.Println("Claims[ExpiresAt]: ", claims["exp"])
-		} else {
+		if !token.Valid {
 			log.Println(err)
 			c.AbortWithStatus(http.StatusUnauthorized)
 		}

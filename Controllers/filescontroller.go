@@ -10,6 +10,7 @@ import (
 
 type FilesController interface {
 	GetInboundFiles(ctx *gin.Context) []models.Inboundfile
+	GetOutboundFiles(ctx *gin.Context) []models.Outboundfile
 }
 
 type filesController struct {
@@ -31,6 +32,18 @@ func (controller *filesController) GetInboundFiles(ctx *gin.Context) []models.In
 	data := controller.fileService.GetInboundFiles(fileId.Id)
 
 	// return []models.Inboundfile{}
+	return data
+
+}
+
+func (controller *filesController) GetOutboundFiles(ctx *gin.Context) []models.Outboundfile {
+	var fileId dto.FileRequestDto
+	err := ctx.ShouldBind(&fileId)
+	if err != nil {
+		return []models.Outboundfile{}
+	}
+	data := controller.fileService.GetOutboundFiles(fileId.Id)
+
 	return data
 
 }

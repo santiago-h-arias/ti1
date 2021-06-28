@@ -53,6 +53,13 @@ func main() {
 				"data": data,
 			})
 		})
+
+		apiRoutes.POST("/outboundfiles", func(c *gin.Context) {
+			data := filesController.GetOutboundFiles(c)
+			c.JSON(http.StatusOK, gin.H{
+				"data": data,
+			})
+		})
 	}
 
 	port := os.Getenv("PORT")

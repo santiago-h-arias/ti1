@@ -7,6 +7,7 @@ import (
 
 type FilesService interface {
 	GetInboundFiles(id string) []models.Inboundfile
+	GetOutboundFiles(id string) []models.Outboundfile
 }
 
 type filesService struct {
@@ -21,5 +22,9 @@ func DBFilesService(dao dataaccess.Dao) FilesService {
 
 func (service *filesService) GetInboundFiles(id string) []models.Inboundfile {
 	data := service.dao.GetInboundFiles(id)
+	return data
+}
+func (service *filesService) GetOutboundFiles(id string) []models.Outboundfile {
+	data := service.dao.GetOutboundFiles(id)
 	return data
 }
