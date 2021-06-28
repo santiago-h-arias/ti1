@@ -41,11 +41,22 @@ Run:
 
     Receives "email" and "password" as form data. Returns a JWT and a user object if auth is ok. 401 otherwise.
 
+The following endpoints require an authentication header (BEARER TOKEN)
+
 - Inboundfiles endpoint:
 
     localhost:8000/api/inboundfiles
 
-    Requires authentication header (BEARER TOKEN). Receives a JSON in the request body:
+    Receives a JSON in the request body:
+    {
+        "id": "YOURKEY"
+    }
+
+- Outboundfiles endpoint:
+
+    localhost:8000/api/outboundfiles
+
+    Receives a JSON in the request body:
     {
         "id": "YOURKEY"
     }
