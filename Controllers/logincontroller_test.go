@@ -68,6 +68,14 @@ func NewMock_Dao(db sqlx.DB) dataaccess.Dao {
 	}
 }
 
+func (dao *mock_dao) GetInboundFiles(id string) []models.Inboundfile {
+	return []models.Inboundfile{}
+}
+
+func (dao *mock_dao) GetOutboundFiles(id string) []models.Outboundfile {
+	return []models.Outboundfile{}
+}
+
 //For Mocking io.Reader Interface (for gin.Context)
 type Reader struct {
 	data      []byte

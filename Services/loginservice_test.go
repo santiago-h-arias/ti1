@@ -33,6 +33,14 @@ func NewMock_Dao(db sqlx.DB) dataaccess.Dao {
 	}
 }
 
+func (dao *mock_dao) GetInboundFiles(id string) []models.Inboundfile {
+	return []models.Inboundfile{}
+}
+
+func (dao *mock_dao) GetOutboundFiles(id string) []models.Outboundfile {
+	return []models.Outboundfile{}
+}
+
 func Test_Login(t *testing.T) {
 	//Mock Instance of sql.DB
 	mock_db, mock, err := sqlmock.New()
