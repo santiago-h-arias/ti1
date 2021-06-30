@@ -51,6 +51,12 @@ type mock_dao struct {
 	db sqlx.DB
 }
 
+func NewMock_Dao(db sqlx.DB) dataaccess.Dao {
+	return &mock_dao{
+		db: db,
+	}
+}
+
 func (dao *mock_dao) CheckUser(email string, password string) (bool, models.NaesbUser) {
 	var user models.NaesbUser
 
@@ -62,18 +68,22 @@ func (dao *mock_dao) CheckUser(email string, password string) (bool, models.Naes
 
 }
 
-func NewMock_Dao(db sqlx.DB) dataaccess.Dao {
-	return &mock_dao{
-		db: db,
-	}
-}
-
 func (dao *mock_dao) GetInboundFiles(id string) []models.Inboundfile {
-	return []models.Inboundfile{}
+	var findfiles []models.Inboundfile
+	err := dao.db.Select(&findfiles, "select *, cast(nuu.NaesbUserKey as char(36)) as NaesbUserKey, cast(InboundFileKey as char(36)) as InboundFileKey, cast(if2.UsKey as char(36)) as UsKey, cast(ThemKey as char(36)) as ThemKey from InboundFiles if2 left join NaesbUserUs nuu on nuu.UsKey = if2.Uskey  where nuu.Inactive = 0 and nuu.NaesbUserKey=@p1", id)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return findfiles
 }
 
 func (dao *mock_dao) GetOutboundFiles(id string) []models.Outboundfile {
-	return []models.Outboundfile{}
+	var findfiles []models.Outboundfile
+	err := dao.db.Select(&findfiles, "select *, cast(nuu.NaesbUserKey as char(36)) as NaesbUserKey, cast(OutboundFileKey as char(36)) as OutboundFileKey, cast(if2.UsKey as char(36)) as UsKey, cast(ThemKey as char(36)) as ThemKey from OutboundFiles if2 left join NaesbUserUs nuu on nuu.UsKey = if2.Uskey where nuu.Inactive = 0 and nuu.NaesbUserKey=@p1", id)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return findfiles
 }
 
 //For Mocking io.Reader Interface (for gin.Context)
