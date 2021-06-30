@@ -12,7 +12,7 @@ type Inboundfile struct {
 	ReceivedAt     string `db:"ReceivedAt" json:"file_received_at"`
 	TransactionId  string `db:"TransactionId" json:"transaction_id"`
 	Processed      string `db:"Processed" json:"processed"`
-	InboundFileId  string `db:"InboundFileId" json:"ib_file_id"`
+	InboundFileId  string `db:"InboundFileId" json:"inbound_file_id"`
 	NaesbUserKey   string `db:"NaesbUserKey" json:"naesb_user_key"`
 	Inactive       string `db:"Inactive" json:"inactive"`
 }
