@@ -25,6 +25,25 @@ func TestGenerateToken(t *testing.T) {
 }
 
 func TestValidateToken(t *testing.T) {
+	t.Run("Valid", func(t *testing.T) {
+		//Valid signature
+		mock_jwtService := &jwtService{
+			secretKey: "UjgFm344XW",
+			issuer:    "thinkbridgeIdProvider",
+		}
+
+		//Generate token based on sample claim
+		sample_token := mock_jwtService.GenerateToken("sample@email.com")
+
+		//Try to validate the token
+		_, err := NewJWTService().ValidateToken(sample_token)
+
+		//Validation should err
+		if err != nil {
+			t.Fatal(`should've validated`)
+		}
+	})
+
 	t.Run("InvalidKey", func(t *testing.T) {
 		//Try to guess the secretkey
 		mock_jwtService := &jwtService{
