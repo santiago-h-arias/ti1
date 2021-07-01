@@ -87,9 +87,15 @@ func Test_Login(t *testing.T) {
 			t.Fatalf(eror.Error())
 		}
 
+		token_to_check, err := testutils.NewMock_JWTService().ValidateToken(token)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		//Output should be untampered
-		if token != "1234_valid_token_4321" {
-			t.Fatalf("\nCouldn't authenticate\nExpected : \"%s\"\tGot : \"%s\"", "1234_valid_token_4321", token)
+		//Token should be valid
+		if !token_to_check.Valid {
+			t.Fatalf(`Couldn't Authenticate, Invalid Token`)
 		}
 	})
 
@@ -133,7 +139,7 @@ func Test_Login(t *testing.T) {
 			t.Fatalf(eror.Error())
 		}
 
-		//Output should be untampered
+		//Token shouldn't be provided
 		if token != "" {
 			t.Fatalf("\nShouldn't have authenticated!\nExpected : \"%s\"\tGot : \"%s\"", "", token)
 		}
@@ -179,7 +185,7 @@ func Test_Login(t *testing.T) {
 			t.Fatalf(eror.Error())
 		}
 
-		//Output should be untampered
+		//Token shouldn't be provided
 		if token != "" {
 			t.Fatalf("\nShouldn't have authenticated!\nExpected : \"%s\"\tGot : \"%s\"", "", token)
 		}
@@ -198,7 +204,7 @@ func Test_Login(t *testing.T) {
 			t.Fatalf(eror.Error())
 		}
 
-		//Output should be untampered
+		//Token shouldn't be provided
 		if token != "" {
 			t.Fatalf("\nShouldn't have authenticated!\nExpected : \"%s\"\tGot : \"%s\"", "", token)
 		}

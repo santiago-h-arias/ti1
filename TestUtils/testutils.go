@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"time"
 
 	models "tinc1/Models"
 
@@ -29,25 +30,51 @@ func RowFromStruct(sample interface{}) []driver.Value {
 
 //For Mocking JWTService Interface
 type mock_jwtService struct {
-	secretkey string
+	secretKey string
 	issuer    string
 }
 
+type mock_jwtCustomClaims struct {
+	Name string `json:"name"`
+	jwt.StandardClaims
+}
+
 func (jwtService *mock_jwtService) GenerateToken(email string) string {
-	if email == "ajith@thinkbridge.in" {
-		return "1234_valid_token_4321"
+	// Set custom and standard claims
+	claims := &mock_jwtCustomClaims{
+		email,
+		jwt.StandardClaims{
+			Issuer:    jwtService.issuer,
+			IssuedAt:  time.Now().Unix(),
+			ExpiresAt: time.Now().Add(time.Hour * 1).Unix(),
+		},
 	}
 
-	return ""
+	// Create token with claims
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// Generate encoded token using the secret signing key
+	t, err := token.SignedString([]byte(jwtService.secretKey))
+	if err != nil {
+		panic(err)
+	}
+	return t
 }
 
 func (jwtService *mock_jwtService) ValidateToken(tokenString string) (*jwt.Token, error) {
-	return &jwt.Token{}, nil
+	return jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// Signing method validation
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		// Return the secret signing key
+		return []byte(jwtService.secretKey), nil
+	})
 }
 
 func NewMock_JWTService() *mock_jwtService {
 	return &mock_jwtService{
-		secretkey: "UjgFm344XW",
+		secretKey: "UjgFm344XW",
 		issuer:    "thinkbridgeIdProvider",
 	}
 }
