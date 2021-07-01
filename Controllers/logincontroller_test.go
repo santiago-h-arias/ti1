@@ -2,127 +2,47 @@ package controllers
 
 import (
 	"bytes"
-	"fmt"
-	"io"
 	"mime/multipart"
 	"net/http/httptest"
 	"regexp"
 	"testing"
-	dataaccess "tinc1/DataAccess"
 	dto "tinc1/Dto"
-	models "tinc1/Models"
 	services "tinc1/Services"
+	testutils "tinc1/TestUtils"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 )
 
-//For Mocking JWTService Interface
-type mock_jwtService struct {
-	secretkey string
-	issuer    string
-}
-
-func (jwtService *mock_jwtService) GenerateToken(email string) string {
-	if email == "ajith@thinkbridge.in" {
-		return "1234_valid_token_4321"
-	}
-	//fmt.Printf("\n\nExpected:%s\nGot:%s\n\n\n", "ajith@thinkbridge.in", email)
-
-	return ""
-}
-
-func (jwtService *mock_jwtService) ValidateToken(tokenString string) (*jwt.Token, error) {
-	return &jwt.Token{}, nil
-}
-
-func NewMock_JWTService() services.JWTService {
-	return &mock_jwtService{
-		secretkey: "UjgFm344XW",
-		issuer:    "thinkbridgeIdProvider",
-	}
-}
-
-//For Mocking Dao Interface (for LoginService)
-type mock_dao struct {
-	db sqlx.DB
-}
-
-func NewMock_Dao(db sqlx.DB) dataaccess.Dao {
-	return &mock_dao{
-		db: db,
-	}
-}
-
-func (dao *mock_dao) CheckUser(email string, password string) (bool, models.NaesbUser) {
-	var user models.NaesbUser
-
-	err := dao.db.QueryRowx("select cast(NaesbUserKey as char(36)) as NaesbUserKey, Name, Email from NaesbUser where Email=@p1 and Password=@p2", email, password).StructScan(&user)
-	if err == nil {
-		return true, user
-	}
-	return false, user
-
-}
-
-func (dao *mock_dao) GetInboundFiles(id string) []models.Inboundfile {
-	var findfiles []models.Inboundfile
-	err := dao.db.Select(&findfiles, "select *, cast(nuu.NaesbUserKey as char(36)) as NaesbUserKey, cast(InboundFileKey as char(36)) as InboundFileKey, cast(if2.UsKey as char(36)) as UsKey, cast(ThemKey as char(36)) as ThemKey from InboundFiles if2 left join NaesbUserUs nuu on nuu.UsKey = if2.Uskey  where nuu.Inactive = 0 and nuu.NaesbUserKey=@p1", id)
-	if err != nil {
-		fmt.Println(err)
-	}
-	return findfiles
-}
-
-func (dao *mock_dao) GetOutboundFiles(id string) []models.Outboundfile {
-	var findfiles []models.Outboundfile
-	err := dao.db.Select(&findfiles, "select *, cast(nuu.NaesbUserKey as char(36)) as NaesbUserKey, cast(OutboundFileKey as char(36)) as OutboundFileKey, cast(if2.UsKey as char(36)) as UsKey, cast(ThemKey as char(36)) as ThemKey from OutboundFiles if2 left join NaesbUserUs nuu on nuu.UsKey = if2.Uskey where nuu.Inactive = 0 and nuu.NaesbUserKey=@p1", id)
-	if err != nil {
-		fmt.Println(err)
-	}
-	return findfiles
-}
-
-//For Mocking io.Reader Interface (for gin.Context)
-type Reader struct {
-	data      []byte
-	readIndex int64
-}
-
-func (r *Reader) Read(p []byte) (n int, err error) {
-	if r.readIndex >= int64(len(r.data)) {
-		err = io.EOF
-		return
-	}
-
-	n = copy(p, r.data[r.readIndex:])
-	r.readIndex += int64(n)
-	return
-}
-
-func Test_Login(t *testing.T) {
+func setupLoginController() (mock sqlmock.Sqlmock, fitted_loginController LoginController, err error) {
 	//MAKE JWTSERVICE
-	mocked_jwtService := NewMock_JWTService()
+	mocked_jwtService := testutils.NewMock_JWTService()
 
 	//MAKE DAO
 	mock_db, mock, err := sqlmock.New() //Mock Instance of sql.DB
 	if err != nil {
-		fmt.Println("expected no error, but got:", err)
 		return
 	}
-	defer mock_db.Close()
 
-	mock_xdb := sqlx.NewDb(mock_db, "sqlserver") //sqlX.DB instance with core as a mocked sql.DB
-	mock_dao := NewMock_Dao(*mock_xdb)           //Our dataAccess operator, uses sqlX.DB
+	//sqlX.DB instance with core as a mocked sql.DB
+	mock_xdb := sqlx.NewDb(mock_db, "sqlserver")
 
-	//MAKE LOGIN SERVICE USING DAO
-	mocked_loginService := services.DBLoginService(mock_dao)
+	//Our dataAccess operator, uses sqlX.DB
+	mock_dao := testutils.NewMock_Dao(*mock_xdb)
 
-	//MAKE LOGINCONTROLLER using LOGINSERVICE and JWTSERVICE
-	fitted_loginController := NewLoginController(mocked_loginService, mocked_jwtService)
+	fitted_loginService := services.DBLoginService(mock_dao)
+	fitted_loginController = NewLoginController(fitted_loginService, mocked_jwtService)
+
+	return
+}
+
+func Test_Login(t *testing.T) {
+	mock, fitted_loginController, err := setupLoginController()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	gin.SetMode(gin.TestMode)
 
@@ -132,6 +52,7 @@ func Test_Login(t *testing.T) {
 			Password: "Ajith12#",
 		}
 
+		//Preparing a Request Body
 		buf := new(bytes.Buffer)
 		mw := multipart.NewWriter(buf)
 		assert.NoError(t, mw.WriteField("email", creds.Email))
@@ -143,22 +64,30 @@ func Test_Login(t *testing.T) {
 		}
 		mw.Close()
 
+		//Preparing a Context containing Request Body
 		mock_ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
 		mock_ctx.Request = httptest.NewRequest("POST", "http://localhost:8000/login", buf)
 		mock_ctx.Request.Header.Set("Content-Type", mw.FormDataContentType())
 
-		//Emulated output
-		rows := sqlmock.NewRows([]string{"NaesbUserKey", "Name", "Email"}).
+		//Mocking DB response
+		rows := sqlmock.NewRows(
+			[]string{
+				"NaesbUserKey",
+				"Name",
+				"Email",
+			}).
 			AddRow("8B0528AB-6E22-40E2-9B60-A4A6C584E6E3", "Ajith", "ajith@thinkbridge.in")
-		//Query to expect and then emulate output
 		mock.ExpectQuery(regexp.QuoteMeta("select cast(NaesbUserKey as char(36)) as NaesbUserKey, Name, Email from NaesbUser where Email=@p1 and Password=@p2")).WillReturnRows(rows)
 
+		//Execute funcion to be tested
 		token, _ := fitted_loginController.Login(mock_ctx)
 
+		//Output should come from a DB query only.
 		if eror := mock.ExpectationsWereMet(); eror != nil {
 			t.Fatalf(eror.Error())
 		}
 
+		//Output should be untampered
 		if token != "1234_valid_token_4321" {
 			t.Fatalf("\nCouldn't authenticate\nExpected : \"%s\"\tGot : \"%s\"", "1234_valid_token_4321", token)
 		}
@@ -170,6 +99,7 @@ func Test_Login(t *testing.T) {
 			Password: "Ajith12#",
 		}
 
+		//Preparing a Request Body
 		buf := new(bytes.Buffer)
 		mw := multipart.NewWriter(buf)
 		assert.NoError(t, mw.WriteField("email", creds.Email))
@@ -181,21 +111,29 @@ func Test_Login(t *testing.T) {
 		}
 		mw.Close()
 
+		//Preparing a Context containing Request Body
 		mock_ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
 		mock_ctx.Request = httptest.NewRequest("POST", "http://localhost:8000/login", buf)
 		mock_ctx.Request.Header.Set("Content-Type", mw.FormDataContentType())
 
-		//Emulated output
-		rows := sqlmock.NewRows([]string{"NaesbUserKey", "Name", "Email"})
-		//Query to expect and then emulate output
+		//Mocking DB response
+		rows := sqlmock.NewRows(
+			[]string{
+				"NaesbUserKey",
+				"Name",
+				"Email",
+			}) //Empty (Now Rows)
 		mock.ExpectQuery(regexp.QuoteMeta("select cast(NaesbUserKey as char(36)) as NaesbUserKey, Name, Email from NaesbUser where Email=@p1 and Password=@p2")).WillReturnRows(rows)
 
+		//Execute funcion to be tested
 		token, _ := fitted_loginController.Login(mock_ctx)
 
+		//Output should come from a DB query only.
 		if eror := mock.ExpectationsWereMet(); eror != nil {
 			t.Fatalf(eror.Error())
 		}
 
+		//Output should be untampered
 		if token != "" {
 			t.Fatalf("\nShouldn't have authenticated!\nExpected : \"%s\"\tGot : \"%s\"", "", token)
 		}
@@ -207,6 +145,7 @@ func Test_Login(t *testing.T) {
 			Password: "",
 		}
 
+		//Preparing a Request Body
 		buf := new(bytes.Buffer)
 		mw := multipart.NewWriter(buf)
 		assert.NoError(t, mw.WriteField("email", creds.Email))
@@ -218,36 +157,48 @@ func Test_Login(t *testing.T) {
 		}
 		mw.Close()
 
+		//Preparing a Context containing Request Body
 		mock_ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
 		mock_ctx.Request = httptest.NewRequest("POST", "http://localhost:8000/login", buf)
 		mock_ctx.Request.Header.Set("Content-Type", mw.FormDataContentType())
 
-		//Emulated output
-		rows := sqlmock.NewRows([]string{"NaesbUserKey", "Name", "Email"})
-		//Query to expect and then emulate output
+		//Mocking DB response
+		rows := sqlmock.NewRows(
+			[]string{
+				"NaesbUserKey",
+				"Name",
+				"Email",
+			})
 		mock.ExpectQuery(regexp.QuoteMeta("select cast(NaesbUserKey as char(36)) as NaesbUserKey, Name, Email from NaesbUser where Email=@p1 and Password=@p2")).WillReturnRows(rows)
 
+		//Execute funcion to be tested
 		token, _ := fitted_loginController.Login(mock_ctx)
 
+		//Output should come from a DB query only.
 		if eror := mock.ExpectationsWereMet(); eror != nil {
 			t.Fatalf(eror.Error())
 		}
 
+		//Output should be untampered
 		if token != "" {
 			t.Fatalf("\nShouldn't have authenticated!\nExpected : \"%s\"\tGot : \"%s\"", "", token)
 		}
 	})
 
 	t.Run(("emptyRequest"), func(t *testing.T) {
+		//Preparing a Context containing (Empty) Request Body
 		mock_ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
 		mock_ctx.Request = httptest.NewRequest("POST", "http://localhost:8000/login", nil)
 
+		//Execute funcion to be tested
 		token, _ := fitted_loginController.Login(mock_ctx)
 
+		//Output should come from a DB query only.
 		if eror := mock.ExpectationsWereMet(); eror != nil {
 			t.Fatalf(eror.Error())
 		}
 
+		//Output should be untampered
 		if token != "" {
 			t.Fatalf("\nShouldn't have authenticated!\nExpected : \"%s\"\tGot : \"%s\"", "", token)
 		}
