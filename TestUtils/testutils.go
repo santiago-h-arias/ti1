@@ -3,7 +3,6 @@ package testutils
 import (
 	"database/sql/driver"
 	"fmt"
-	"io"
 	"reflect"
 	"time"
 
@@ -117,23 +116,6 @@ func (dao *mock_dao) GetOutboundFiles(id string) []models.Outboundfile {
 		fmt.Println(err)
 	}
 	return findfiles
-}
-
-//For Mocking io.Reader Interface (for gin.Context)
-type Reader struct {
-	data      []byte
-	readIndex int64
-}
-
-func (r *Reader) Read(p []byte) (n int, err error) {
-	if r.readIndex >= int64(len(r.data)) {
-		err = io.EOF
-		return
-	}
-
-	n = copy(p, r.data[r.readIndex:])
-	r.readIndex += int64(n)
-	return
 }
 
 //Implementing Try Catch in Golang
