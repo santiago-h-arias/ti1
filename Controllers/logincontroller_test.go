@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"mime/multipart"
 	"net/http/httptest"
+	"reflect"
 	"regexp"
 	"testing"
 	dto "tinc1/Dto"
+	models "tinc1/Models"
 	services "tinc1/Services"
 	testutils "tinc1/TestUtils"
 
@@ -80,20 +82,27 @@ func Test_Login(t *testing.T) {
 		mock.ExpectQuery(regexp.QuoteMeta("select cast(NaesbUserKey as char(36)) as NaesbUserKey, Name, Email from NaesbUser where Email=@p1 and Password=@p2")).WillReturnRows(rows)
 
 		//Execute funcion to be tested
-		token, _ := fitted_loginController.Login(mock_ctx)
+		token, user := fitted_loginController.Login(mock_ctx)
 
 		//Output should come from a DB query only.
 		if eror := mock.ExpectationsWereMet(); eror != nil {
 			t.Fatalf(eror.Error())
 		}
 
+		//Output should be untampered
+		if !reflect.DeepEqual(user, models.NaesbUser{
+			User_key:   "8B0528AB-6E22-40E2-9B60-A4A6C584E6E3",
+			User_name:  "Ajith",
+			User_email: "ajith@thinkbridge.in",
+		}) {
+			t.Fatalf(`output malformed`)
+		}
+
+		//Token should be valid
 		token_to_check, err := testutils.NewMock_JWTService().ValidateToken(token)
 		if err != nil {
 			t.Fatal(err)
 		}
-
-		//Output should be untampered
-		//Token should be valid
 		if !token_to_check.Valid {
 			t.Fatalf(`Couldn't Authenticate, Invalid Token`)
 		}
@@ -132,11 +141,16 @@ func Test_Login(t *testing.T) {
 		mock.ExpectQuery(regexp.QuoteMeta("select cast(NaesbUserKey as char(36)) as NaesbUserKey, Name, Email from NaesbUser where Email=@p1 and Password=@p2")).WillReturnRows(rows)
 
 		//Execute funcion to be tested
-		token, _ := fitted_loginController.Login(mock_ctx)
+		token, user := fitted_loginController.Login(mock_ctx)
 
 		//Output should come from a DB query only.
 		if eror := mock.ExpectationsWereMet(); eror != nil {
 			t.Fatalf(eror.Error())
+		}
+
+		//Output should be empty
+		if !reflect.DeepEqual(user, models.NaesbUser{}) {
+			t.Fatalf(`output unexpected`)
 		}
 
 		//Token shouldn't be provided
@@ -174,15 +188,20 @@ func Test_Login(t *testing.T) {
 				"NaesbUserKey",
 				"Name",
 				"Email",
-			})
+			}) //Empty (No rows)
 		mock.ExpectQuery(regexp.QuoteMeta("select cast(NaesbUserKey as char(36)) as NaesbUserKey, Name, Email from NaesbUser where Email=@p1 and Password=@p2")).WillReturnRows(rows)
 
 		//Execute funcion to be tested
-		token, _ := fitted_loginController.Login(mock_ctx)
+		token, user := fitted_loginController.Login(mock_ctx)
 
 		//Output should come from a DB query only.
 		if eror := mock.ExpectationsWereMet(); eror != nil {
 			t.Fatalf(eror.Error())
+		}
+
+		//Output should be empty
+		if !reflect.DeepEqual(user, models.NaesbUser{}) {
+			t.Fatalf(`output unexpected`)
 		}
 
 		//Token shouldn't be provided
@@ -197,11 +216,16 @@ func Test_Login(t *testing.T) {
 		mock_ctx.Request = httptest.NewRequest("POST", "http://localhost:8000/login", nil)
 
 		//Execute funcion to be tested
-		token, _ := fitted_loginController.Login(mock_ctx)
+		token, user := fitted_loginController.Login(mock_ctx)
 
 		//Output should come from a DB query only.
 		if eror := mock.ExpectationsWereMet(); eror != nil {
 			t.Fatalf(eror.Error())
+		}
+
+		//Output should be empty
+		if !reflect.DeepEqual(user, models.NaesbUser{}) {
+			t.Fatalf(`output unexpected`)
 		}
 
 		//Token shouldn't be provided

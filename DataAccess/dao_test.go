@@ -54,13 +54,21 @@ func Test_CheckUser(t *testing.T) {
 		mock.ExpectQuery(regexp.QuoteMeta("select cast(NaesbUserKey as char(36)) as NaesbUserKey, Name, Email from NaesbUser where Email=@p1 and Password=@p2")).WillReturnRows(rows)
 
 		//Execute funcion to be tested
-		isAuthenticated, _ := fitted_dao.CheckUser(creds.Email, creds.Password)
+		isAuthenticated, user := fitted_dao.CheckUser(creds.Email, creds.Password)
 
 		//Should Authenticate
 		if !isAuthenticated {
 			t.Fatalf(`Failed to Authenticate`)
 		}
 
+		//Output should be untampered
+		if !reflect.DeepEqual(user, models.NaesbUser{
+			User_key:   "8B0528AB-6E22-40E2-9B60-A4A6C584E6E3",
+			User_name:  "Ajith",
+			User_email: "ajith@thinkbridge.in",
+		}) {
+			t.Fatalf(`output malformed`)
+		}
 		//Output should come from a DB query only.
 		if eror := mock.ExpectationsWereMet(); eror != nil {
 			t.Fatalf(eror.Error())
@@ -84,11 +92,16 @@ func Test_CheckUser(t *testing.T) {
 		mock.ExpectQuery(regexp.QuoteMeta("select cast(NaesbUserKey as char(36)) as NaesbUserKey, Name, Email from NaesbUser where Email=@p1 and Password=@p2")).WillReturnRows(rows)
 
 		//Execute funcion to be tested
-		isAuthenticated, _ := fitted_dao.CheckUser(creds.Email, creds.Password)
+		isAuthenticated, user := fitted_dao.CheckUser(creds.Email, creds.Password)
 
 		//Should not authenticate!
 		if isAuthenticated {
 			t.Fatalf(`Shouldn't have authenticated`)
+		}
+
+		//Output should be empty
+		if !reflect.DeepEqual(user, models.NaesbUser{}) {
+			t.Fatalf(`output unexpected`)
 		}
 
 		//Output should come from a DB query only.
