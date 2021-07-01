@@ -2,49 +2,45 @@ package services
 
 import (
 	"database/sql"
-	"database/sql/driver"
 	"fmt"
 	"reflect"
 	"regexp"
 	"testing"
 	models "tinc1/Models"
+	testutils "tinc1/TestUtils"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
 )
 
-func rowFromStruct(sample interface{}) []driver.Value {
-	var ret []driver.Value
-
-	rv := reflect.ValueOf(sample)
-	for i := 0; i < rv.NumField(); i++ {
-		fv := rv.Field(i)
-		dv := driver.Value(fv.Interface())
-		ret = append(ret, dv)
-	}
-
-	return ret
-}
-
-func TestGetInboundFiles(t *testing.T) {
+func setupFileServvice() (mock sqlmock.Sqlmock, fitted_fileService FilesService, err error) {
 	//Mock Instance of sql.DB
 	mock_db, mock, err := sqlmock.New()
 	if err != nil {
 		fmt.Println("expected no error, but got:", err)
 		return
 	}
-	defer mock_db.Close()
 
 	//sqlX.DB instance with core as a mocked sql.DB
 	mock_xdb := sqlx.NewDb(mock_db, "sqlserver")
-	//Our dataAccess operator, uses sqlX.DB
-	mock_dao := NewMock_Dao(*mock_xdb)
 
-	mock_fileService := DBFilesService(mock_dao)
+	//Our dataAccess operator, uses sqlX.DB
+	mock_dao := testutils.NewMock_Dao(*mock_xdb)
+
+	fitted_fileService = DBFilesService(mock_dao)
+	return
+}
+
+func TestGetInboundFiles(t *testing.T) {
+	mock, fitted_fileService, err := setupFileServvice()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("validId", func(t *testing.T) {
-		sample_id := "8B0528AB-6E22-40E2-9B60-A4A6C584E6E3"
+		sample_id := "8B0528AB-6E22-40E2-9B60-A4A6C584E6E3" //Doesn't really matter because Query output is hardcoded
 
+		//Sample DB output, can be anything
 		sample_row1 := models.Inboundfile{
 			InboundFileKey: "F3F53EB3-91DD-484E-B38F-0063D03343A8",
 			UsKey:          "D6DFAD93-8B80-4119-8B94-6814F1ED75BD",
@@ -61,7 +57,6 @@ func TestGetInboundFiles(t *testing.T) {
 			NaesbUserKey:   "8B0528AB-6E22-40E2-9B60-A4A6C584E6E3",
 			Inactive:       "false",
 		}
-
 		sample_row2 := models.Inboundfile{
 			InboundFileKey: "F6837013-CAE7-44EE-8D57-01201A46AF55",
 			UsKey:          "D6DFAD93-8B80-4119-8B94-6814F1ED75BD",
@@ -79,35 +74,73 @@ func TestGetInboundFiles(t *testing.T) {
 			Inactive:       "false",
 		}
 
-		rows := sqlmock.NewRows([]string{"InboundFileKey", "UsKey", "UsCommonCode", "ThemKey", "ThemCommonCode", "Filename", "Plaintext", "Ciphertext", "ReceivedAt", "TransactionId", "Processed", "InboundFileId", "NaesbUserKey", "Inactive"}).
-			AddRow(rowFromStruct(sample_row1)...).AddRow(rowFromStruct(sample_row2)...)
-
+		//Mocking DB response
+		rows := sqlmock.NewRows(
+			[]string{
+				"InboundFileKey",
+				"UsKey",
+				"UsCommonCode",
+				"ThemKey",
+				"ThemCommonCode",
+				"Filename",
+				"Plaintext",
+				"Ciphertext",
+				"ReceivedAt",
+				"TransactionId",
+				"Processed",
+				"InboundFileId",
+				"NaesbUserKey",
+				"Inactive",
+			}).
+			AddRow(testutils.RowFromStruct(sample_row1)...).AddRow(testutils.RowFromStruct(sample_row2)...)
 		mock.ExpectQuery(regexp.QuoteMeta("select *, cast(nuu.NaesbUserKey as char(36)) as NaesbUserKey, cast(InboundFileKey as char(36)) as InboundFileKey, cast(if2.UsKey as char(36)) as UsKey, cast(ThemKey as char(36)) as ThemKey from InboundFiles if2 left join NaesbUserUs nuu on nuu.UsKey = if2.Uskey  where nuu.Inactive = 0 and nuu.NaesbUserKey=@p1")).WillReturnRows(rows)
 
-		output := mock_fileService.GetInboundFiles(sample_id)
+		//Execute funcion to be tested
+		output := fitted_fileService.GetInboundFiles(sample_id)
 
+		//Output should be untampered
 		if !reflect.DeepEqual(output, []models.Inboundfile{sample_row1, sample_row2}) {
 			t.Fatalf(`Output doesn't match`)
 		}
 
+		//Output should come from a DB query only.
 		if eror := mock.ExpectationsWereMet(); eror != nil {
 			t.Fatalf(eror.Error())
 		}
 	})
 
 	t.Run("invalidId", func(t *testing.T) {
-		sample_id := "69420"
+		sample_id := "69420" //Doesn't really matter because Query output is hardcoded
 
-		rows := sqlmock.NewRows([]string{"InboundFileKey", "UsKey", "UsCommonCode", "ThemKey", "ThemCommonCode", "Filename", "Plaintext", "Ciphertext", "ReceivedAt", "TransactionId", "Processed", "InboundFileId", "NaesbUserKey", "Inactive"})
-
+		//Mocking DB response
+		rows := sqlmock.NewRows(
+			[]string{
+				"InboundFileKey",
+				"UsKey",
+				"UsCommonCode",
+				"ThemKey",
+				"ThemCommonCode",
+				"Filename",
+				"Plaintext",
+				"Ciphertext",
+				"ReceivedAt",
+				"TransactionId",
+				"Processed",
+				"InboundFileId",
+				"NaesbUserKey",
+				"Inactive",
+			}) //Empty (No Rows)
 		mock.ExpectQuery(regexp.QuoteMeta("select *, cast(nuu.NaesbUserKey as char(36)) as NaesbUserKey, cast(InboundFileKey as char(36)) as InboundFileKey, cast(if2.UsKey as char(36)) as UsKey, cast(ThemKey as char(36)) as ThemKey from InboundFiles if2 left join NaesbUserUs nuu on nuu.UsKey = if2.Uskey  where nuu.Inactive = 0 and nuu.NaesbUserKey=@p1")).WillReturnRows(rows)
 
-		output := mock_fileService.GetInboundFiles(sample_id)
+		//Execute funcion to be tested
+		output := fitted_fileService.GetInboundFiles(sample_id)
 
+		//Output should be untampered
 		if reflect.DeepEqual(output, []models.Inboundfile{}) {
 			t.Fatalf(`Output not expected`)
 		}
 
+		//Output should come from a DB query only.
 		if eror := mock.ExpectationsWereMet(); eror != nil {
 			t.Fatalf(eror.Error())
 		}
@@ -115,25 +148,16 @@ func TestGetInboundFiles(t *testing.T) {
 }
 
 func TestGetOutboundFiles(t *testing.T) {
-	//Mock Instance of sql.DB
-	mock_db, mock, err := sqlmock.New()
+	mock, fitted_fileService, err := setupFileServvice()
 	if err != nil {
-		fmt.Println("expected no error, but got:", err)
-		return
+		t.Fatal(err)
 	}
-	defer mock_db.Close()
-
-	//sqlX.DB instance with core as a mocked sql.DB
-	mock_xdb := sqlx.NewDb(mock_db, "sqlserver")
-	//Our dataAccess operator, uses sqlX.DB
-	mock_dao := NewMock_Dao(*mock_xdb)
-
-	mock_fileService := DBFilesService(mock_dao)
 
 	t.Run("validId", func(t *testing.T) {
-		sample_id := "8B0528AB-6E22-40E2-9B60-A4A6C584E6E3"
+		sample_id := "8B0528AB-6E22-40E2-9B60-A4A6C584E6E3" //Doesn't really matter because Query output is hardcoded
 
-		sample_row1 := models.Outboundfile{ //Crass sample
+		//Sample DB output, can be anything
+		sample_row1 := models.Outboundfile{
 			OutboundFileKey: "F3F53EB3-91DD-484E-B38F-0063D03343A8",
 			NaesbUserKey:    "8B0528AB-6E22-40E2-9B60-A4A6C584E6E3",
 			UsKey:           "D6DFAD93-8B80-4119-8B94-6814F1ED75BD",
@@ -187,7 +211,6 @@ func TestGetOutboundFiles(t *testing.T) {
 			OutboundFileId: "16",
 			Inactive:       "false",
 		}
-
 		sample_row2 := models.Outboundfile{ //Crass sample
 			OutboundFileKey: "A0D6BE4E-39AF-4FDE-977F-087910BD9137",
 			NaesbUserKey:    "8B0528AB-6E22-40E2-9B60-A4A6C584E6E3",
@@ -243,38 +266,98 @@ func TestGetOutboundFiles(t *testing.T) {
 			Inactive:       "false",
 		}
 
-		rows := sqlmock.NewRows([]string{"OutboundFileKey", "NaesbUserKey", "UsKey", "UsCommonCode", "ThemKey", "ThemCommonCode", "Filename", "Plaintext", "Ciphertext", "Attempt1At", "Attempt2At", "Attempt3At", "Receipt", "Result", "Escalated", "EscalatedAt", "Debug", "CreatedAt", "EmpowerOutgoingEdiFileKey", "DoNotSend", "LastLocation", "Ciphered", "Posted", "OutboundFileId", "Inactive"}).
-			AddRow(rowFromStruct(sample_row1)...).AddRow(rowFromStruct(sample_row2)...)
-
+		//Mocking DB response
+		rows := sqlmock.NewRows(
+			[]string{
+				"OutboundFileKey",
+				"NaesbUserKey",
+				"UsKey",
+				"UsCommonCode",
+				"ThemKey",
+				"ThemCommonCode",
+				"Filename",
+				"Plaintext",
+				"Ciphertext",
+				"Attempt1At",
+				"Attempt2At",
+				"Attempt3At",
+				"Receipt",
+				"Result",
+				"Escalated",
+				"EscalatedAt",
+				"Debug",
+				"CreatedAt",
+				"EmpowerOutgoingEdiFileKey",
+				"DoNotSend",
+				"LastLocation",
+				"Ciphered",
+				"Posted",
+				"OutboundFileId",
+				"Inactive",
+			}).
+			AddRow(testutils.RowFromStruct(sample_row1)...).
+			AddRow(testutils.RowFromStruct(sample_row2)...)
 		mock.ExpectQuery(regexp.QuoteMeta("select *, cast(nuu.NaesbUserKey as char(36)) as NaesbUserKey, cast(OutboundFileKey as char(36)) as OutboundFileKey, cast(if2.UsKey as char(36)) as UsKey, cast(ThemKey as char(36)) as ThemKey from OutboundFiles if2 left join NaesbUserUs nuu on nuu.UsKey = if2.Uskey where nuu.Inactive = 0 and nuu.NaesbUserKey=@p1")).WillReturnRows(rows)
 
-		output := mock_fileService.GetOutboundFiles(sample_id)
+		//Execute funcion to be tested
+		output := fitted_fileService.GetOutboundFiles(sample_id)
 
+		//Output should be untampered
 		if !reflect.DeepEqual(output, []models.Outboundfile{sample_row1, sample_row2}) {
 			t.Fatalf(`Output doesn't match`)
 		}
 
+		//Output should come from a DB query only.
 		if eror := mock.ExpectationsWereMet(); eror != nil {
 			t.Fatalf(eror.Error())
 		}
 	})
 
 	t.Run("invalidId", func(t *testing.T) {
-		sample_id := "69420"
+		sample_id := "69420" //Doesn't really matter because Query output is hardcoded
 
-		rows := sqlmock.NewRows([]string{"OutboundFileKey", "NaesbUserKey", "UsKey", "UsCommonCode", "ThemKey", "ThemCommonCode", "Filename", "Plaintext", "Ciphertext", "Attempt1At", "Attempt2At", "Attempt3At", "Receipt", "Result", "Escalated", "EscalatedAt", "Debug", "CreatedAt", "EmpowerOutgoingEdiFileKey", "DoNotSend", "LastLocation", "Ciphered", "Posted", "OutboundFileId", "Inactive"})
+		//Mocking DB response
+		rows := sqlmock.NewRows(
+			[]string{
+				"OutboundFileKey",
+				"NaesbUserKey",
+				"UsKey",
+				"UsCommonCode",
+				"ThemKey",
+				"ThemCommonCode",
+				"Filename",
+				"Plaintext",
+				"Ciphertext",
+				"Attempt1At",
+				"Attempt2At",
+				"Attempt3At",
+				"Receipt",
+				"Result",
+				"Escalated",
+				"EscalatedAt",
+				"Debug",
+				"CreatedAt",
+				"EmpowerOutgoingEdiFileKey",
+				"DoNotSend",
+				"LastLocation",
+				"Ciphered",
+				"Posted",
+				"OutboundFileId",
+				"Inactive",
+			}) //Empty (No rows)
 		mock.ExpectQuery(regexp.QuoteMeta("select *, cast(nuu.NaesbUserKey as char(36)) as NaesbUserKey, cast(OutboundFileKey as char(36)) as OutboundFileKey, cast(if2.UsKey as char(36)) as UsKey, cast(ThemKey as char(36)) as ThemKey from OutboundFiles if2 left join NaesbUserUs nuu on nuu.UsKey = if2.Uskey where nuu.Inactive = 0 and nuu.NaesbUserKey=@p1")).WillReturnRows(rows)
 
-		output := mock_fileService.GetOutboundFiles(sample_id)
+		//Execute funcion to be tested
+		output := fitted_fileService.GetOutboundFiles(sample_id)
 
+		//Output should be untampered
 		if reflect.DeepEqual(output, []models.Outboundfile{}) {
 			t.Fatalf(`Output not expected`)
 		}
 
+		//Output should come from a DB query only.
 		if eror := mock.ExpectationsWereMet(); eror != nil {
 			t.Fatalf(eror.Error())
 		}
-
 	})
-
 }
