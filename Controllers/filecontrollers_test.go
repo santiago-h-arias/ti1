@@ -391,6 +391,7 @@ func TestGetOutboundFiles(t *testing.T) {
 		mock_ctx.Request = httptest.NewRequest("POST", "http://localhost:8000/api/inboundfiles", buf)
 		mock_ctx.Request.Header.Set("Content-Type", mw.FormDataContentType())
 
+		//Mocking DB response
 		rows := sqlmock.NewRows(
 			[]string{
 				"OutboundFileKey",
