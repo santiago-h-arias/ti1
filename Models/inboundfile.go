@@ -15,4 +15,6 @@ type Inboundfile struct {
 	InboundFileId  string `db:"InboundFileId" json:"inbound_file_id"`
 	NaesbUserKey   string `db:"NaesbUserKey" json:"naesb_user_key"`
 	Inactive       string `db:"Inactive" json:"inactive"`
+	UsName         string `db:"UsName" json:"us_name"`
+	ThemName       string `db:"ThemName" json:"ThemName"`
 }

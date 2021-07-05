@@ -28,4 +28,6 @@ type Outboundfile struct {
 	Posted                    string         `db:"Posted" json:"posted,omitempty"`
 	OutboundFileId            string         `db:"OutboundFileId" json:"outbound_file_id,omitempty"`
 	Inactive                  string         `db:"Inactive" json:"inactive,omitempty"`
+	UsName                    string         `db:"UsName" json:"us_name,omitempty"`
+	ThemName                  string         `db:"ThemName" json:"ThemName,omitempty"`
 }
