@@ -10,7 +10,7 @@ type Outboundfile struct {
 	ThemKey                   string         `db:"ThemKey" json:"them_key,omitempty"`
 	ThemCommonCode            string         `db:"ThemCommonCode" json:"them_common_code,omitempty"`
 	Filename                  string         `db:"Filename" json:"file_name,omitempty"`
-	Plaintext                 string         `db:"Plaintext" json:"plain_text,omitempty"`
+	Plaintext                 string         `db:"Plaintext" json:"file_plain_text,omitempty"`
 	Ciphertext                sql.NullString `db:"Ciphertext" json:"-"`
 	Attempt1At                sql.NullString `db:"Attempt1At" json:"attempt_1_at,omitempty"`
 	Attempt2At                sql.NullString `db:"Attempt2At" json:"attempt_2_at,omitempty"`
